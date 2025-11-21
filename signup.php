@@ -4,8 +4,64 @@ session_start();
 include("connection.php");
 include("functions.php");
 
-$userData = checkLogin($connection);
+if ($_SERVER['REQUEST_METHOD'] == "POST") {
+    // Get and normalize the form data
+    $fullname = trim($_POST['fullname'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirm-password'] ?? '';
+    $terms = isset($_POST['terms']) ? true : false;
 
+    // Basic validation
+    if (!empty($fullname) && !empty($username) && !empty($email) && !empty($password) && !empty($confirmPassword) && $terms) {
+        if ($password === $confirmPassword) {
+            // Validate email
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                echo "Invalid email address.";
+            } else {
+                // Use prepared statements to avoid SQL injection
+                $stmt = mysqli_prepare($connection, "SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1");
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, 'ss', $username, $email);
+                    mysqli_stmt_execute($stmt);
+                    mysqli_stmt_store_result($stmt);
+
+                    if (mysqli_stmt_num_rows($stmt) == 0) {
+                        mysqli_stmt_close($stmt);
+
+                        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+
+                        $insertStmt = mysqli_prepare($connection, "INSERT INTO users (fullname, username, email, password) VALUES (?, ?, ?, ?)");
+                        if ($insertStmt) {
+                            mysqli_stmt_bind_param($insertStmt, 'ssss', $fullname, $username, $email, $hashedPassword);
+                            $executed = mysqli_stmt_execute($insertStmt);
+                            mysqli_stmt_close($insertStmt);
+
+                            if ($executed) {
+                                header("Location: login.php");
+                                die;
+                            } else {
+                                echo "Error creating account. Please try again later.";
+                            }
+                        } else {
+                            echo "Database error (insert).";
+                        }
+                    } else {
+                        mysqli_stmt_close($stmt);
+                        echo "Username or Email already exists.";
+                    }
+                } else {
+                    echo "Database error (query).";
+                }
+            }
+        } else {
+            echo "Passwords do not match.";
+        }
+    } else {
+        echo "Please fill in all fields and agree to the terms.";
+    }
+}
 
 ?>
 
@@ -224,22 +280,22 @@ $userData = checkLogin($connection);
 
             <div class="form-group">
                 <label for="fullname">Full Name</label>
-                <input type="text" id="fullname" placeholder="Enter your full name">
+                <input type="text" id="fullname" name="fullname" placeholder="Enter your full name">
             </div>
 
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" placeholder="Choose a username">
+                <input type="text" id="username" name="username" placeholder="Choose a username">
             </div>
 
             <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" placeholder="Enter your email">
+                <input type="email" id="email" name="email" placeholder="Enter your email">
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" placeholder="Create a password" oninput="checkPasswordStrength()">
+                <input type="password" id="password" name="password" placeholder="Create a password" oninput="checkPasswordStrength()">
                 <div class="password-strength">
                     <div class="strength-bar">
                         <div class="strength-fill" id="strengthFill"></div>
@@ -249,15 +305,15 @@ $userData = checkLogin($connection);
 
             <div class="form-group">
                 <label for="confirm-password">Confirm Password</label>
-                <input type="password" id="confirm-password" placeholder="Confirm your password">
+                <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password">
             </div>
 
             <div class="checkbox-group">
-                <input type="checkbox" id="terms">
+                <input type="checkbox" id="terms" name="terms">
                 <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
             </div>
 
-            <button class="signup-button" onclick="handleSignup()">Sign Up</button>
+            <button type="button" class="signup-button" onclick="handleSignup()">Sign Up</button>
         </form>
 
         <div class="divider">
@@ -322,9 +378,9 @@ $userData = checkLogin($connection);
                 return;
             }
 
-            // Here you would typically send the signup request to your backend
-            console.log('Signup attempt:', { fullname, username, email, password });
-            alert('Signup functionality would be connected to your backend');
+            // Submit the validated form to the backend
+            console.log('Signup attempt (submitting):', { fullname, username, email });
+            document.querySelector('form').submit();
         }
 
         // Allow Enter key to submit
