@@ -193,7 +193,7 @@
     <div class="login-container">
         
         <form action="" method="POST">
-            
+
             <div class="login-header">
                 <h1>Welcome Back</h1>
                 <p>Please login to your account</p>
@@ -227,7 +227,7 @@
         </div>
 
         <div class="signup-link">
-            Don't have an account? <a href="#">Sign up</a>
+            Don't have an account? <a href="signup.php">Sign up</a>
         </div>
     </div>
 
