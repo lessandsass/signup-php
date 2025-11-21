@@ -26,8 +26,8 @@ This repository demonstrates a small signup flow using PHP and MySQL with secure
 2. Create the database and `users` table. Example SQL (run in MySQL):
 
 ```sql
-CREATE DATABASE IF NOT EXISTS signup_php;
-USE signup_php;
+CREATE DATABASE IF NOT EXISTS signup;
+USE signup;
 
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
